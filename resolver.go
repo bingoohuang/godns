@@ -32,10 +32,10 @@ type RResp struct {
 type Resolver struct {
 	servers      []string
 	domainServer *suffixTreeNode
-	config       *ResolvSettings
+	config       *ResolvConf
 }
 
-func NewResolver(c ResolvSettings) *Resolver {
+func NewResolver(c ResolvConf) *Resolver {
 	r := &Resolver{
 		domainServer: newSuffixTreeRoot(),
 		config:       &c,
@@ -133,7 +133,7 @@ func (r *Resolver) Lookup(net string, req *dns.Msg) (message *dns.Msg, err error
 		WriteTimeout: r.Timeout(),
 	}
 
-	if net == "udp" && settings.ResolvConfig.SetEDNS0 {
+	if net == "udp" && conf.ResolvConfig.SetEDNS0 {
 		req = req.SetEdns0(65535, true)
 	}
 
@@ -166,7 +166,7 @@ func (r *Resolver) Lookup(net string, req *dns.Msg) (message *dns.Msg, err error
 		}
 	}
 
-	ticker := time.NewTicker(time.Duration(settings.ResolvConfig.Interval) * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(conf.ResolvConfig.Interval) * time.Millisecond)
 	defer ticker.Stop()
 	// Start lookup on each nameserver top-down, in every second
 	nameservers := r.Nameservers(qname)

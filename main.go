@@ -17,29 +17,29 @@ func main() {
 	verbose := flag.Bool("v", false, "verbose output")
 	flag.Parse()
 
-	if _, err := toml.DecodeFile(*configFile, &settings); err != nil {
+	if _, err := toml.DecodeFile(*configFile, &conf); err != nil {
 		log.Fatalf("%s is not a valid toml config file, error: %+v", *configFile, err)
 	}
 
 	if *verbose {
-		settings.Log.Stdout = true
-		settings.Log.Level = "DEBUG"
+		conf.Log.Stdout = true
+		conf.Log.Level = "DEBUG"
 	}
 
 	logger = newLogger()
 
 	server := &Server{
-		host:     settings.Server.Host,
-		port:     settings.Server.Port,
+		host:     conf.Server.Host,
+		port:     conf.Server.Port,
 		rTimeout: 5 * time.Second,
 		wTimeout: 5 * time.Second,
 	}
 
 	server.Run()
 
-	logger.Info("godns %s start", settings.Version)
+	logger.Info("godns %s start", conf.Version)
 
-	if settings.Debug {
+	if conf.Debug {
 		go profileCPU()
 		go profileMEM()
 	}
@@ -81,15 +81,15 @@ func profileMEM() {
 func newLogger() *GoDNSLogger {
 	l := NewLogger()
 
-	if settings.Log.Stdout {
+	if conf.Log.Stdout {
 		l.SetLogger("console", nil)
 	}
 
-	if settings.Log.File != "" {
-		config := map[string]interface{}{"file": settings.Log.File}
+	if conf.Log.File != "" {
+		config := map[string]interface{}{"file": conf.Log.File}
 		l.SetLogger("file", config)
 	}
 
-	l.SetLevel(settings.Log.LogLevel())
+	l.SetLevel(conf.Log.LogLevel())
 	return l
 }

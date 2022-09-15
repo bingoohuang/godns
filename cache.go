@@ -182,7 +182,7 @@ func (m *MemcachedCache) Full() bool {
 
 // Redis cache Backend
 
-func NewRedisCache(rs RedisSettings, expire int64) *RedisCache {
+func NewRedisCache(rs RedisConf, expire int64) *RedisCache {
 	rc := &redis.Client{Addr: rs.Addr(), Db: rs.DB, Password: rs.Password}
 	return &RedisCache{
 		Backend: rc,

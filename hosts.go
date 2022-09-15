@@ -17,7 +17,7 @@ type Hosts struct {
 	refreshInterval time.Duration
 }
 
-func NewHosts(hs HostsSettings, rs RedisSettings) Hosts {
+func NewHosts(hs HostsConf, rs RedisConf) Hosts {
 	fileHosts := &FileHosts{
 		file:  hs.HostsFile,
 		hosts: make(map[string]string),

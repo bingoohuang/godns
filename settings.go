@@ -4,7 +4,7 @@ import (
 	"strconv"
 )
 
-var settings Settings
+var conf Conf
 
 var LogLevelMap = map[string]int{
 	"DEBUG":  LevelDebug,
@@ -14,19 +14,19 @@ var LogLevelMap = map[string]int{
 	"ERROR":  LevelError,
 }
 
-type Settings struct {
+type Conf struct {
 	Version      string
 	Debug        bool
-	Server       DNSServerSettings `toml:"server"`
-	ResolvConfig ResolvSettings    `toml:"resolv"`
-	Redis        RedisSettings     `toml:"redis"`
-	Memcache     MemcacheSettings  `toml:"memcache"`
-	Log          LogSettings       `toml:"log"`
-	Cache        CacheSettings     `toml:"cache"`
-	Hosts        HostsSettings     `toml:"hosts"`
+	Server       DNSServerConf `toml:"server"`
+	ResolvConfig ResolvConf    `toml:"resolv"`
+	Redis        RedisConf     `toml:"redis"`
+	Memcache     MemcacheConf  `toml:"memcache"`
+	Log          LogConf       `toml:"log"`
+	Cache        CacheConf     `toml:"cache"`
+	Hosts        HostsConf     `toml:"hosts"`
 }
 
-type ResolvSettings struct {
+type ResolvConf struct {
 	Timeout        int
 	Interval       int
 	SetEDNS0       bool
@@ -34,33 +34,33 @@ type ResolvSettings struct {
 	ResolvFile     string `toml:"resolv-file"`
 }
 
-type DNSServerSettings struct {
+type DNSServerConf struct {
 	Host string
 	Port int
 }
 
-type RedisSettings struct {
+type RedisConf struct {
 	Host     string
 	Port     int
 	DB       int
 	Password string
 }
 
-type MemcacheSettings struct {
+type MemcacheConf struct {
 	Servers []string
 }
 
-func (s RedisSettings) Addr() string {
+func (s RedisConf) Addr() string {
 	return s.Host + ":" + strconv.Itoa(s.Port)
 }
 
-type LogSettings struct {
+type LogConf struct {
 	Stdout bool
 	File   string
 	Level  string
 }
 
-func (ls LogSettings) LogLevel() int {
+func (ls LogConf) LogLevel() int {
 	l, ok := LogLevelMap[ls.Level]
 	if !ok {
 		panic("Config error: invalid log level: " + ls.Level)
@@ -68,13 +68,13 @@ func (ls LogSettings) LogLevel() int {
 	return l
 }
 
-type CacheSettings struct {
+type CacheConf struct {
 	Backend  string
 	Expire   int
 	MaxCount int `toml:"max-count"`
 }
 
-type HostsSettings struct {
+type HostsConf struct {
 	Enable          bool
 	HostsFile       string `toml:"host-file"`
 	RedisEnable     bool   `toml:"redis-enable"`
