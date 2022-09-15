@@ -109,7 +109,6 @@ func (r *Resolver) parseServerListFile(buf *os.File) {
 			r.servers = append(r.servers, net.JoinHostPort(ip, port))
 		}
 	}
-
 }
 
 func (r *Resolver) ReadServerListFile(path string) {

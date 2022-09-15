@@ -1,16 +1,10 @@
 package main
 
 import (
-	"flag"
-	"log"
 	"strconv"
-
-	"github.com/BurntSushi/toml"
 )
 
-var (
-	settings Settings
-)
+var settings Settings
 
 var LogLevelMap = map[string]int{
 	"DEBUG":  LevelDebug,
@@ -77,7 +71,7 @@ func (ls LogSettings) LogLevel() int {
 type CacheSettings struct {
 	Backend  string
 	Expire   int
-	Maxcount int
+	MaxCount int `toml:"max-count"`
 }
 
 type HostsSettings struct {
@@ -87,20 +81,4 @@ type HostsSettings struct {
 	RedisKey        string `toml:"redis-key"`
 	TTL             uint32 `toml:"ttl"`
 	RefreshInterval uint32 `toml:"refresh-interval"`
-}
-
-func init() {
-	configFile := flag.String("c", "./etc/godns.toml", "Look for godns toml-formatting config file in this directory")
-	verbose := flag.Bool("v", false, "verbose output")
-	flag.Parse()
-
-	if _, err := toml.DecodeFile(*configFile, &settings); err != nil {
-		log.Fatalf("%s is not a valid toml config file, error: %+v", configFile, err)
-	}
-
-	if *verbose {
-		settings.Log.Stdout = true
-		settings.Log.Level = "DEBUG"
-	}
-
 }

@@ -30,44 +30,31 @@ type GODNSHandler struct {
 }
 
 func NewHandler() *GODNSHandler {
+	var cache, negCache Cache
 
-	var (
-		cacheConfig     CacheSettings
-		resolver        *Resolver
-		cache, negCache Cache
-	)
+	resolver := NewResolver(settings.ResolvConfig)
 
-	resolver = NewResolver(settings.ResolvConfig)
-
-	cacheConfig = settings.Cache
-	switch cacheConfig.Backend {
-	case "memory":
+	cacheConf := settings.Cache
+	switch cacheConf.Backend {
+	case "", "memory":
 		cache = &MemoryCache{
-			Backend:  make(map[string]Mesg, cacheConfig.Maxcount),
-			Expire:   time.Duration(cacheConfig.Expire) * time.Second,
-			Maxcount: cacheConfig.Maxcount,
+			Backend:  make(map[string]Msg, cacheConf.MaxCount),
+			Expire:   time.Duration(cacheConf.Expire) * time.Second,
+			MaxCount: cacheConf.MaxCount,
 		}
 		negCache = &MemoryCache{
-			Backend:  make(map[string]Mesg),
-			Expire:   time.Duration(cacheConfig.Expire) * time.Second / 2,
-			Maxcount: cacheConfig.Maxcount,
+			Backend:  make(map[string]Msg),
+			Expire:   time.Duration(cacheConf.Expire) * time.Second / 2,
+			MaxCount: cacheConf.MaxCount,
 		}
 	case "memcache":
-		cache = NewMemcachedCache(
-			settings.Memcache.Servers,
-			int32(cacheConfig.Expire))
-		negCache = NewMemcachedCache(
-			settings.Memcache.Servers,
-			int32(cacheConfig.Expire/2))
+		cache = NewMemcachedCache(settings.Memcache.Servers, int32(cacheConf.Expire))
+		negCache = NewMemcachedCache(settings.Memcache.Servers, int32(cacheConf.Expire/2))
 	case "redis":
-		cache = NewRedisCache(
-			settings.Redis,
-			int64(cacheConfig.Expire))
-		negCache = NewRedisCache(
-			settings.Redis,
-			int64(cacheConfig.Expire/2))
+		cache = NewRedisCache(settings.Redis, int64(cacheConf.Expire))
+		negCache = NewRedisCache(settings.Redis, int64(cacheConf.Expire/2))
 	default:
-		logger.Error("Invalid cache backend %s", cacheConfig.Backend)
+		logger.Error("Invalid cache backend %s", cacheConf.Backend)
 		panic("Invalid cache backend")
 	}
 
@@ -76,12 +63,12 @@ func NewHandler() *GODNSHandler {
 		hosts = NewHosts(settings.Hosts, settings.Redis)
 	}
 
-	return &GODNSHandler{resolver, cache, negCache, hosts}
+	return &GODNSHandler{resolver: resolver, cache: cache, negCache: negCache, hosts: hosts}
 }
 
 func (h *GODNSHandler) do(Net string, w dns.ResponseWriter, req *dns.Msg) {
 	q := req.Question[0]
-	Q := Question{UnFqdn(q.Name), dns.TypeToString[q.Qtype], dns.ClassToString[q.Qclass]}
+	Q := Question{qname: UnFqdn(q.Name), qtype: dns.TypeToString[q.Qtype], qclass: dns.ClassToString[q.Qclass]}
 
 	var remote net.IP
 	if Net == "tcp" {
@@ -95,31 +82,31 @@ func (h *GODNSHandler) do(Net string, w dns.ResponseWriter, req *dns.Msg) {
 
 	// Query hosts
 	if settings.Hosts.Enable && IPQuery > 0 {
-		if ips, ok := h.hosts.Get(Q.qname, IPQuery); ok {
+		if ips := h.hosts.Get(Q.qname, IPQuery); len(ips) > 0 {
 			m := new(dns.Msg)
 			m.SetReply(req)
 
 			switch IPQuery {
 			case _IP4Query:
-				rr_header := dns.RR_Header{
+				rrHeader := dns.RR_Header{
 					Name:   q.Name,
 					Rrtype: dns.TypeA,
 					Class:  dns.ClassINET,
 					Ttl:    settings.Hosts.TTL,
 				}
 				for _, ip := range ips {
-					a := &dns.A{rr_header, ip}
+					a := &dns.A{Hdr: rrHeader, A: ip}
 					m.Answer = append(m.Answer, a)
 				}
 			case _IP6Query:
-				rr_header := dns.RR_Header{
+				rrHeader := dns.RR_Header{
 					Name:   q.Name,
 					Rrtype: dns.TypeAAAA,
 					Class:  dns.ClassINET,
 					Ttl:    settings.Hosts.TTL,
 				}
 				for _, ip := range ips {
-					aaaa := &dns.AAAA{rr_header, ip}
+					aaaa := &dns.AAAA{Hdr: rrHeader, AAAA: ip}
 					m.Answer = append(m.Answer, aaaa)
 				}
 			}

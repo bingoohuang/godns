@@ -27,6 +27,5 @@ func TestHostDomainAndIP(t *testing.T) {
 			So(isDomain("123.test"), ShouldEqual, true)
 			So(isIP("123.test"), ShouldEqual, false)
 		})
-
 	})
 }

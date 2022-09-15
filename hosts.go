@@ -36,18 +36,10 @@ func NewHosts(hs HostsSettings, rs RedisSettings) Hosts {
 	hosts := Hosts{fileHosts, redisHosts, time.Second * time.Duration(hs.RefreshInterval)}
 	hosts.refresh()
 	return hosts
-
 }
 
-/*
-Match local /etc/hosts file first, remote redis records second
-*/
-func (h *Hosts) Get(domain string, family int) ([]net.IP, bool) {
-
-	var sips []string
-	var ip net.IP
-	var ips []net.IP
-
+// Get Match local /etc/hosts file first, remote redis records second
+func (h *Hosts) Get(domain string, family int) (ips []net.IP) {
 	sips, ok := h.fileHosts.Get(domain)
 	if !ok {
 		if h.redisHosts != nil {
@@ -56,9 +48,10 @@ func (h *Hosts) Get(domain string, family int) ([]net.IP, bool) {
 	}
 
 	if sips == nil {
-		return nil, false
+		return nil
 	}
 
+	var ip net.IP
 	for _, sip := range sips {
 		switch family {
 		case _IP4Query:
@@ -73,7 +66,7 @@ func (h *Hosts) Get(domain string, family int) ([]net.IP, bool) {
 		}
 	}
 
-	return ips, (ips != nil)
+	return ips
 }
 
 /*

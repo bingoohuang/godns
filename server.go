@@ -31,7 +31,6 @@ func (s *Server) Run() {
 	uh.HandleFunc(".", h.DoUDP)
 	us := &dns.Server{Addr: s.Addr(), Net: "udp", Handler: uh, UDPSize: 65535, ReadTimeout: s.rTimeout, WriteTimeout: s.wTimeout}
 	go s.start(us)
-
 }
 
 func (s *Server) start(ds *dns.Server) {
@@ -39,5 +38,4 @@ func (s *Server) start(ds *dns.Server) {
 	if err := ds.ListenAndServe(); err != nil {
 		logger.Error("Start %s listener on %s failed:%s", ds.Net, s.Addr(), err.Error())
 	}
-
 }

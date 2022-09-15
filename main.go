@@ -1,20 +1,32 @@
 package main
 
 import (
+	"flag"
+	"github.com/BurntSushi/toml"
+	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"runtime/pprof"
 	"time"
 )
 
-var (
-	logger *GoDNSLogger
-)
+var logger *GoDNSLogger
 
 func main() {
+	configFile := flag.String("c", "./etc/godns.toml", "Look for godns toml-formatting config file in this directory")
+	verbose := flag.Bool("v", false, "verbose output")
+	flag.Parse()
 
-	initLogger()
+	if _, err := toml.DecodeFile(*configFile, &settings); err != nil {
+		log.Fatalf("%s is not a valid toml config file, error: %+v", *configFile, err)
+	}
+
+	if *verbose {
+		settings.Log.Stdout = true
+		settings.Log.Level = "DEBUG"
+	}
+
+	logger = newLogger()
 
 	server := &Server{
 		host:     settings.Server.Host,
@@ -35,15 +47,8 @@ func main() {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
 
-forever:
-	for {
-		select {
-		case <-sig:
-			logger.Info("signal received, stopping")
-			break forever
-		}
-	}
-
+	<-sig
+	logger.Info("signal received, stopping")
 }
 
 func profileCPU() {
@@ -57,7 +62,6 @@ func profileCPU() {
 	time.AfterFunc(6*time.Minute, func() {
 		pprof.StopCPUProfile()
 		f.Close()
-
 	})
 }
 
@@ -72,24 +76,20 @@ func profileMEM() {
 		pprof.WriteHeapProfile(f)
 		f.Close()
 	})
-
 }
 
-func initLogger() {
-	logger = NewLogger()
+func newLogger() *GoDNSLogger {
+	l := NewLogger()
 
 	if settings.Log.Stdout {
-		logger.SetLogger("console", nil)
+		l.SetLogger("console", nil)
 	}
 
 	if settings.Log.File != "" {
 		config := map[string]interface{}{"file": settings.Log.File}
-		logger.SetLogger("file", config)
+		l.SetLogger("file", config)
 	}
 
-	logger.SetLevel(settings.Log.LogLevel())
-}
-
-func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	l.SetLevel(settings.Log.LogLevel())
+	return l
 }

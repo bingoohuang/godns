@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const LOG_OUTPUT_BUFFER = 1024
+const LogOutputBuffer = 1024
 
 const (
 	LevelDebug = iota
@@ -16,29 +16,29 @@ const (
 	LevelError
 )
 
-type logMesg struct {
+type logMsg struct {
 	Level int
-	Mesg  string
+	Msg   string
 }
 
 type LoggerHandler interface {
 	Setup(config map[string]interface{}) error
-	Write(mesg *logMesg)
+	Write(msg *logMsg)
 }
 
 type GoDNSLogger struct {
 	level   int
-	mesgs   chan *logMesg
+	msgChan chan *logMsg
 	outputs map[string]LoggerHandler
 }
 
 func NewLogger() *GoDNSLogger {
-	logger := &GoDNSLogger{
-		mesgs:   make(chan *logMesg, LOG_OUTPUT_BUFFER),
+	l := &GoDNSLogger{
+		msgChan: make(chan *logMsg, LogOutputBuffer),
 		outputs: make(map[string]LoggerHandler),
 	}
-	go logger.Run()
-	return logger
+	go l.Run()
+	return l
 }
 
 func (l *GoDNSLogger) SetLogger(handlerType string, config map[string]interface{}) {
@@ -63,50 +63,50 @@ func (l *GoDNSLogger) SetLevel(level int) {
 func (l *GoDNSLogger) Run() {
 	for {
 		select {
-		case mesg := <-l.mesgs:
+		case m := <-l.msgChan:
 			for _, handler := range l.outputs {
-				handler.Write(mesg)
+				handler.Write(m)
 			}
 		}
 	}
 }
 
-func (l *GoDNSLogger) writeMesg(mesg string, level int) {
+func (l *GoDNSLogger) writeMsg(msg string, level int) {
 	if l.level > level {
 		return
 	}
 
-	lm := &logMesg{
+	lm := &logMsg{
 		Level: level,
-		Mesg:  mesg,
+		Msg:   msg,
 	}
 
-	l.mesgs <- lm
+	l.msgChan <- lm
 }
 
 func (l *GoDNSLogger) Debug(format string, v ...interface{}) {
-	mesg := fmt.Sprintf("[DEBUG] "+format, v...)
-	l.writeMesg(mesg, LevelDebug)
+	m := fmt.Sprintf("[DEBUG] "+format, v...)
+	l.writeMsg(m, LevelDebug)
 }
 
 func (l *GoDNSLogger) Info(format string, v ...interface{}) {
-	mesg := fmt.Sprintf("[INFO] "+format, v...)
-	l.writeMesg(mesg, LevelInfo)
+	m := fmt.Sprintf("[INFO] "+format, v...)
+	l.writeMsg(m, LevelInfo)
 }
 
 func (l *GoDNSLogger) Notice(format string, v ...interface{}) {
-	mesg := fmt.Sprintf("[NOTICE] "+format, v...)
-	l.writeMesg(mesg, LevelNotice)
+	m := fmt.Sprintf("[NOTICE] "+format, v...)
+	l.writeMsg(m, LevelNotice)
 }
 
 func (l *GoDNSLogger) Warn(format string, v ...interface{}) {
-	mesg := fmt.Sprintf("[WARN] "+format, v...)
-	l.writeMesg(mesg, LevelWarn)
+	m := fmt.Sprintf("[WARN] "+format, v...)
+	l.writeMsg(m, LevelWarn)
 }
 
 func (l *GoDNSLogger) Error(format string, v ...interface{}) {
-	mesg := fmt.Sprintf("[ERROR] "+format, v...)
-	l.writeMesg(mesg, LevelError)
+	m := fmt.Sprintf("[ERROR] "+format, v...)
+	l.writeMsg(m, LevelError)
 }
 
 type ConsoleHandler struct {
@@ -125,12 +125,11 @@ func (h *ConsoleHandler) Setup(config map[string]interface{}) error {
 	}
 	h.logger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	return nil
-
 }
 
-func (h *ConsoleHandler) Write(lm *logMesg) {
+func (h *ConsoleHandler) Write(lm *logMsg) {
 	if h.level <= lm.Level {
-		h.logger.Println(lm.Mesg)
+		h.logger.Println(lm.Msg)
 	}
 }
 
@@ -151,7 +150,7 @@ func (h *FileHandler) Setup(config map[string]interface{}) error {
 
 	if file, ok := config["file"]; ok {
 		h.file = file.(string)
-		output, err := os.OpenFile(h.file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		output, err := os.OpenFile(h.file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return err
 		}
@@ -162,12 +161,12 @@ func (h *FileHandler) Setup(config map[string]interface{}) error {
 	return nil
 }
 
-func (h *FileHandler) Write(lm *logMesg) {
+func (h *FileHandler) Write(lm *logMsg) {
 	if h.logger == nil {
 		return
 	}
 
 	if h.level <= lm.Level {
-		h.logger.Println(lm.Mesg)
+		h.logger.Println(lm.Msg)
 	}
 }

@@ -10,27 +10,27 @@ import (
 )
 
 func TestConsole(t *testing.T) {
-	logger := NewLogger()
-	logger.SetLogger("console", nil)
-	logger.SetLevel(LevelInfo)
+	l := NewLogger()
+	l.SetLogger("console", nil)
+	l.SetLevel(LevelInfo)
 
-	logger.Debug("debug")
-	logger.Info("info")
-	logger.Notice("notiece")
-	logger.Warn("warn")
-	logger.Error("error")
+	l.Debug("debug")
+	l.Info("info")
+	l.Notice("notiece")
+	l.Warn("warn")
+	l.Error("error")
 }
 
 func TestFile(t *testing.T) {
-	logger := NewLogger()
-	logger.SetLogger("file", map[string]interface{}{"file": "test.log"})
-	logger.SetLevel(LevelInfo)
+	l := NewLogger()
+	l.SetLogger("file", map[string]interface{}{"file": "test.log"})
+	l.SetLevel(LevelInfo)
 
-	logger.Debug("debug")
-	logger.Info("info")
-	logger.Notice("notiece")
-	logger.Warn("warn")
-	logger.Error("error")
+	l.Debug("debug")
+	l.Info("info")
+	l.Notice("notice")
+	l.Warn("warn")
+	l.Error("error")
 
 	time.Sleep(time.Second)
 
@@ -39,20 +39,20 @@ func TestFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	b := bufio.NewReader(f)
-	linenum := 0
+	lineNum := 0
 	for {
 		line, _, err := b.ReadLine()
 		if err != nil {
 			break
 		}
 		if len(line) > 0 {
-			linenum++
+			lineNum++
 		}
 	}
 
 	Convey("Test Log File Handler", t, func() {
 		Convey("file line nums should be 4", func() {
-			So(linenum, ShouldEqual, 4)
+			So(lineNum, ShouldEqual, 4)
 		})
 	})
 

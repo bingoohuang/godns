@@ -49,5 +49,4 @@ func Test_Suffix_Tree(t *testing.T) {
 		So(found, ShouldEqual, true)
 		So(v, ShouldEqual, "166.111.8.28")
 	})
-
 }

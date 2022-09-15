@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -28,8 +27,7 @@ func (e KeyExpired) Error() string {
 	return e.Key + " " + "expired"
 }
 
-type CacheIsFull struct {
-}
+type CacheIsFull struct{}
 
 func (e CacheIsFull) Error() string {
 	return "Cache is Full"
@@ -43,7 +41,7 @@ func (e SerializerError) Error() string {
 	return fmt.Sprintf("Serializer error: got %v", e.err)
 }
 
-type Mesg struct {
+type Msg struct {
 	Msg    *dns.Msg
 	Expire time.Time
 }
@@ -57,27 +55,26 @@ type Cache interface {
 }
 
 type MemoryCache struct {
-	Backend  map[string]Mesg
+	Backend  map[string]Msg
 	Expire   time.Duration
-	Maxcount int
+	MaxCount int
 	mu       sync.RWMutex
 }
 
 func (c *MemoryCache) Get(key string) (*dns.Msg, error) {
 	c.mu.RLock()
-	mesg, ok := c.Backend[key]
+	msg, ok := c.Backend[key]
 	c.mu.RUnlock()
 	if !ok {
 		return nil, KeyNotFound{key}
 	}
 
-	if mesg.Expire.Before(time.Now()) {
+	if msg.Expire.Before(time.Now()) {
 		c.Remove(key)
 		return nil, KeyExpired{key}
 	}
 
-	return mesg.Msg, nil
-
+	return msg.Msg, nil
 }
 
 func (c *MemoryCache) Set(key string, msg *dns.Msg) error {
@@ -86,9 +83,9 @@ func (c *MemoryCache) Set(key string, msg *dns.Msg) error {
 	}
 
 	expire := time.Now().Add(c.Expire)
-	mesg := Mesg{msg, expire}
+	m := Msg{msg, expire}
 	c.mu.Lock()
-	c.Backend[key] = mesg
+	c.Backend[key] = m
 	c.mu.Unlock()
 	return nil
 }
@@ -114,16 +111,14 @@ func (c *MemoryCache) Length() int {
 }
 
 func (c *MemoryCache) Full() bool {
-	// if Maxcount is zero. the cache will never be full.
-	if c.Maxcount == 0 {
+	// if MaxCount is zero. the cache will never be full.
+	if c.MaxCount == 0 {
 		return false
 	}
-	return c.Length() >= c.Maxcount
+	return c.Length() >= c.MaxCount
 }
 
-/*
-Memcached backend
-*/
+// Memcached backend
 
 func NewMemcachedCache(servers []string, expire int32) *MemcachedCache {
 	c := memcache.New(servers...)
@@ -185,9 +180,7 @@ func (m *MemcachedCache) Full() bool {
 	return false
 }
 
-/*
-Redis cache Backend
-*/
+// Redis cache Backend
 
 func NewRedisCache(rs RedisSettings, expire int64) *RedisCache {
 	rc := &redis.Client{Addr: rs.Addr(), Db: rs.DB, Password: rs.Password}
@@ -255,20 +248,4 @@ func KeyGen(q Question) string {
 	x := h.Sum(nil)
 	key := fmt.Sprintf("%x", x)
 	return key
-}
-
-/* we need to define marsheling to encode and decode
- */
-type JsonSerializer struct {
-}
-
-func (*JsonSerializer) Dumps(mesg *dns.Msg) (encoded []byte, err error) {
-	encoded, err = json.Marshal(*mesg)
-	return
-}
-
-func (*JsonSerializer) Loads(data []byte) (*dns.Msg, error) {
-	var mesg dns.Msg
-	err := json.Unmarshal(data, &mesg)
-	return &mesg, err
 }
