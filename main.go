@@ -42,7 +42,7 @@ func main() {
 
 	server.Run()
 
-	logger.Info("godns %s start")
+	logger.Info("godns start")
 
 	if conf.Debug {
 		go profileCPU()
