@@ -192,3 +192,32 @@ stdout_logfile = /var/log/godns.log
 ## LICENSE
 
 godns is under the MIT license. See the LICENSE file for details.
+
+
+## demo
+
+
+```sh
+% dig a.cn @127.0.0.1 -p5301
+
+; <<>> DiG 9.10.6 <<>> a.cn @127.0.0.1 -p5301
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 64638
+;; flags: qr rd; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
+;; WARNING: recursion requested but not available
+
+;; QUESTION SECTION:
+;a.cn.                          IN      A
+
+;; ANSWER SECTION:
+a.cn.                   600     IN      A       192.168.1.1
+a.cn.                   600     IN      A       192.168.1.2
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.1#5301(127.0.0.1)
+;; WHEN: Mon Sep 19 13:07:32 CST 2022
+;; MSG SIZE  rcvd: 62
+
+bingoobjca@bingoobjcadeMacBook-Pro godns % 
+```

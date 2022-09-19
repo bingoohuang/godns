@@ -20,7 +20,7 @@ type Hosts struct {
 func NewHosts(hs HostsConf, rs RedisConf) Hosts {
 	fileHosts := &FileHosts{
 		file:  hs.HostsFile,
-		hosts: make(map[string]string),
+		hosts: make(map[string][]string),
 	}
 
 	var redisHosts *RedisHosts
@@ -136,7 +136,7 @@ func (r *RedisHosts) clear() {
 
 type FileHosts struct {
 	file  string
-	hosts map[string]string
+	hosts map[string][]string
 	mu    sync.RWMutex
 }
 
@@ -146,13 +146,13 @@ func (f *FileHosts) Get(domain string) ([]string, bool) {
 	domain = strings.ToLower(domain)
 	ip, ok := f.hosts[domain]
 	if ok {
-		return []string{ip}, true
+		return ip, true
 	}
 
 	for host, ip := range f.hosts {
 		if strings.HasPrefix(host, "*.") {
 			if strings.HasSuffix(domain, strings.TrimPrefix(host, "*")) {
-				return []string{ip}, true
+				return ip, true
 			}
 		}
 	}
@@ -200,16 +200,16 @@ func (f *FileHosts) Refresh() {
 		// The domains may not strict standard, like "local" so don't check with f.isDomain(domain).
 		for i := 1; i <= len(sli)-1; i++ {
 			domain := strings.TrimSpace(sli[i])
-			if domain == "" {
-				continue
+			if domain != "" {
+				d := strings.ToLower(domain)
+				f.hosts[d] = append(f.hosts[d], ip)
 			}
 
-			f.hosts[strings.ToLower(domain)] = ip
 		}
 	}
 	logger.Debug("update hosts records from %s, total %d records.", f.file, len(f.hosts))
 }
 
 func (f *FileHosts) clear() {
-	f.hosts = make(map[string]string)
+	f.hosts = make(map[string][]string)
 }

@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/BurntSushi/toml"
 	"log"
 	"os"
 	"os/signal"
 	"runtime/pprof"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 var logger *GoDNSLogger
