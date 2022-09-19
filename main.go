@@ -8,6 +8,8 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"github.com/bingoohuang/gg/pkg/v"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -28,17 +30,19 @@ func main() {
 	}
 
 	logger = newLogger()
+	if *verbose {
+		logger.Info("godns version: %s", v.Version())
+	}
 
 	server := &Server{
-		host:     conf.Server.Host,
-		port:     conf.Server.Port,
+		listen:   conf.Server.Listen,
 		rTimeout: 5 * time.Second,
 		wTimeout: 5 * time.Second,
 	}
 
 	server.Run()
 
-	logger.Info("godns %s start", conf.Version)
+	logger.Info("godns %s start")
 
 	if conf.Debug {
 		go profileCPU()

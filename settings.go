@@ -15,8 +15,7 @@ var LogLevelMap = map[string]int{
 }
 
 type Conf struct {
-	Version      string
-	Debug        bool
+	Debug        bool          `toml:"debug"`
 	Server       DNSServerConf `toml:"server"`
 	ResolvConfig ResolvConf    `toml:"resolv"`
 	Redis        RedisConf     `toml:"redis"`
@@ -35,8 +34,7 @@ type ResolvConf struct {
 }
 
 type DNSServerConf struct {
-	Host string
-	Port int
+	Listen string `toml:"listen"`
 }
 
 type RedisConf struct {

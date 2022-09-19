@@ -1,10 +1,8 @@
 # Toml config file
-Version = "0.1.2"
-Debug = false
+debug = false
 
 [server]
-host = "127.0.0.1"
-port = 5301
+listen = ":5301"
 
 [resolv]
 # Domain-specific nameservers configuration, formatting keep compatible with Dnsmasq
